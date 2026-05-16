@@ -1,0 +1,15 @@
+2026/05/16-09:35:29.423 3e00 Reusing MANIFEST D:\XX\Downloads\Tiktok_Crawling\profiles\default\Default\Local Storage\leveldb/MANIFEST-000001
+2026/05/16-09:35:29.430 3e00 Recovering log #20
+2026/05/16-09:35:29.432 3e00 Reusing old log D:\XX\Downloads\Tiktok_Crawling\profiles\default\Default\Local Storage\leveldb/000020.log 
+2026/05/16-09:36:29.456 297c Level-0 table #23: started
+2026/05/16-09:36:29.471 297c Level-0 table #23: 25397 bytes OK
+2026/05/16-09:36:29.475 297c Delete type=0 #20
+2026/05/16-09:36:29.476 297c Compacting 4@0 + 1@1 files
+2026/05/16-09:36:29.490 297c Generated table #24@0: 83 keys, 244981 bytes
+2026/05/16-09:36:29.490 297c Compacted 4@0 + 1@1 files => 244981 bytes
+2026/05/16-09:36:29.493 297c compacted to: files[ 0 1 0 0 0 0 0 ]
+2026/05/16-09:36:29.495 297c Delete type=2 #14
+2026/05/16-09:36:29.495 297c Delete type=2 #16
+2026/05/16-09:36:29.495 297c Delete type=2 #18
+2026/05/16-09:36:29.495 297c Delete type=2 #20
+2026/05/16-09:36:29.495 297c Delete type=2 #23

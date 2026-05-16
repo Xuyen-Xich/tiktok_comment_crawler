@@ -1,0 +1,2 @@
+"""Beginner-friendly analytics helpers."""
+
