@@ -10,7 +10,6 @@ from pathlib import Path
 
 APP_NAME = "tiktok-social-listening"
 DEFAULT_OUTPUT_DIR = Path("output")
-DEFAULT_PROFILE_DIR = Path("profiles") / "default"
 DEFAULT_DEBUG_DIR = Path("output") / "debug"
 DEFAULT_LANGUAGE = "en-US"
 DEFAULT_TIMEZONE = "Asia/Bangkok"

@@ -38,19 +38,12 @@ class TikTokCrawler:
         interceptor: TikTokApiInterceptor | None = None,
         dom_extractor: DomExtractor | None = None,
         scroll_engine: ScrollEngine | None = None,
-        ask_for_login: bool = False,
-        skip_login_detection: bool = False,
     ) -> None:
         self.page = page
         self.settings = settings
         self.logger = logger
         self.parser = parser or CommentParser(logger)
-        self.captcha_handler = captcha_handler or CaptchaHandler(
-            settings.captcha_timeout_seconds, 
-            logger, 
-            ask_for_login=ask_for_login,
-            skip_login_detection=skip_login_detection
-        )
+        self.captcha_handler = captcha_handler or CaptchaHandler(settings.captcha_timeout_seconds, logger)
         self.interceptor = interceptor or TikTokApiInterceptor(self.parser, logger)
         self.dom_extractor = dom_extractor or DomExtractor(self.parser, logger)
         self.scroll_engine = scroll_engine or ScrollEngine(
@@ -110,7 +103,6 @@ class TikTokCrawler:
         await self.page.goto(url, wait_until="domcontentloaded")
         await self.page.locator("body").wait_for(timeout=self.settings.page_timeout_ms)
         await self.captcha_handler.wait_if_needed(self.page)
-        await self.captcha_handler.wait_for_login_if_needed(self.page)
         self.logger.info("navigation_completed", extra={"url": url})
 
     async def crawl_video(

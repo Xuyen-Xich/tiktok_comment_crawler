@@ -60,12 +60,10 @@ LOGIN_SELECTORS = (
 class CaptchaHandler:
     """Detect TikTok verification and pause until a human solves it."""
 
-    def __init__(self, timeout_seconds: int, logger: logging.Logger, poll_seconds: float = 3.0, ask_for_login: bool = False, skip_login_detection: bool = False) -> None:
+    def __init__(self, timeout_seconds: int, logger: logging.Logger, poll_seconds: float = 3.0) -> None:
         self.timeout_seconds = timeout_seconds
         self.logger = logger
         self.poll_seconds = poll_seconds
-        self.ask_for_login = ask_for_login
-        self.skip_login_detection = skip_login_detection
 
     async def is_challenge_visible(self, page: Page) -> bool:
         """Return True when a captcha or verification screen appears visible."""
@@ -114,25 +112,13 @@ class CaptchaHandler:
         )
 
     async def is_login_prompt_visible(self, page: Page) -> bool:
-        """Return True when TikTok is blocking access behind a manual login prompt.
-        
-        When ask_for_login=False (default), only checks loginContainer for speed.
-        When ask_for_login=True, does full check for login prompts.
-        """
-        
-        # Fast path: only check loginContainer if not asking for login interactively
-        if not self.ask_for_login:
-            try:
-                return await page.locator("#loginContainer").is_visible(timeout=50)
-            except Exception:
-                return False
-        
-        # Full check for interactive login scenarios
+        """Return True when TikTok is blocking access behind a manual login prompt."""
+
         try:
             body_text = await page.locator("body").inner_text(timeout=500)
         except Exception:
             body_text = ""
-        
+
         normalized = body_text.lower()
         if any(token in normalized for token in LOGIN_TEXTS):
             try:
@@ -140,9 +126,7 @@ class CaptchaHandler:
                     return True
             except Exception:
                 return True
-            return False
 
-        # Check loginContainer
         try:
             if await page.locator("#loginContainer").is_visible(timeout=100):
                 return True
@@ -297,77 +281,30 @@ class CaptchaHandler:
         return False
 
     async def wait_for_login_if_needed(self, page: Page) -> None:
-        """Pause execution while the user logs into TikTok manually.
-        
-        - If ask_for_login=False (default): Auto-closes loginContainer and returns quickly
-        - If ask_for_login=True: Asks user interactively
-        """
-        
-        # Wrap entire operation with timeout to prevent hanging
+        """Pause briefly while TikTok login prompts are inspected."""
+
         try:
-            # Use short timeout for default mode (only auto-close), longer for interactive mode
-            timeout_val = 1.5 if not self.ask_for_login else 5.0
             await asyncio.wait_for(
                 self._wait_for_login_if_needed_internal(page),
-                timeout=timeout_val
+                timeout=2.0,
             )
         except asyncio.TimeoutError:
-            self.logger.warning("login_check_timeout", extra={"timeout_seconds": timeout_val})
-            if not self.ask_for_login:
-                print("\nLogin check timed out (>1.5s). Continuing anyway...\n")
+            self.logger.warning("login_check_timeout", extra={"timeout_seconds": 2.0})
+            print("\nLogin check timed out. Continuing anyway...\n")
         except Exception as e:
             self.logger.debug(f"Error in login check: {e}")
 
     async def _wait_for_login_if_needed_internal(self, page: Page) -> None:
         """Internal login check logic."""
-        
-        # Skip everything if flag is set
-        if self.skip_login_detection:
-            self.logger.info("login_detection_skipped")
-            return
 
         if not await self.is_login_prompt_visible(page):
             return
 
         # Try to auto-close loginContainer if present
         if await self.auto_close_login_container(page):
-            # Successfully closed, wait a moment then return
             await asyncio.sleep(0.5)
             return
 
-        # If not asking for login interactively, give up and continue
-        if not self.ask_for_login:
-            self.logger.info("login_prompt_detected_skipped", extra={"ask_for_login": False})
-            print("\nLogin dialog detected. Skipping login (use --ask-for-login to interact).\n")
-            return
-
-        self.logger.warning("login_prompt_detected")
-        
-        # Ask user if they want to login
-        loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(
-            None, 
-            lambda: input("\nTikTok is requesting login. Do you want to sign in? (yes/no): ").lower().strip()
-        )
-        
-        if response not in ("yes", "y"):
-            self.logger.info("login_skipped_by_user")
-            print("Skipping login and continuing with crawl.\n")
-            return
-
-        print("Please sign in manually in the opened browser.")
-        print("The crawler will resume automatically after login completes.\n")
-
-        deadline = time.monotonic() + self.timeout_seconds
-        while time.monotonic() < deadline:
-            if not await self.is_login_prompt_visible(page):
-                self.logger.info("login_completed")
-                await asyncio.sleep(0.5)
-                return
-            await asyncio.sleep(self.poll_seconds)
-
-        self.logger.warning(
-            "login_timeout",
-            extra={"timeout_seconds": self.timeout_seconds},
-        )
+        self.logger.info("login_prompt_detected_skipped")
+        print("\nLogin dialog detected. Skipping login and continuing.\n")
 

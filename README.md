@@ -1,8 +1,6 @@
 # TikTok Social Listening Framework
 
-Async Playwright crawler for collecting TikTok comments for marketing analytics, classroom demos, and future sentiment-analysis pipelines.
-
-This refactor replaces the original single-file crawler with a modular framework. It keeps the practical classroom features: persistent browser sessions, manual captcha solving, reply crawling, tolerant selector fallbacks, debug screenshots, and spreadsheet-friendly exports.
+Async Playwright crawler for collecting TikTok comments for marketing analytics.
 
 ## Quick Start
 
@@ -24,43 +22,26 @@ python app.py crawl --url "https://www.tiktok.com/@rioolite6969/video/7613919533
 Run batch crawl from a URL list:
 
 ```powershell
-python app.py batch-crawl --urls-file data/urls.txt --max-comments 500 --output-dir output
+python app.py batch-crawl --urls-file data/urls.txt --max-comments 100 --output-dir output
 ```
 
 ```powershell
-python app.py search --keyword "skincare" --top-n 10 --max-comments-per-video 500
+python app.py search --keyword "Tensei shitara Slime Datta Ken" --top-n 10 --max-comments-per-video 100
 ```
 
 Convert a JSON export to Parquet:
 
 ```powershell
-python app.py export --input-json output/post_1234567890.json --format parquet
+python app.py export --input-json output/post_7613919533417418002.json --format parquet
 ```
 
-## Persistent Profiles (Reuse)
+## Notes on Login and Profiles
 
-To avoid repeated logins, create and reuse a persistent Playwright profile directory.
+TikTok's login flow is frequently blocked for automated browser sessions. This repository no longer relies on persistent profile directories or manual login workflows.
 
-- Login once and save the profile (open a visible browser, authenticate manually):
-
-```powershell
-python app.py crawl --url "https://www.tiktok.com/" --profile-dir profiles/default --wait-login-seconds 300 --keep-open
-```
-
-After you sign in, close the browser (or stop the run) so cookies and localStorage are persisted in `profiles/default`.
-
-- Reuse the saved profile for subsequent crawls or searches:
-
-```powershell
-python app.py crawl --url "https://www.tiktok.com/@creator/video/12345" --profile-dir profiles/default
-
-python app.py search --keyword "skincare" --top-n 10 --profile-dir profiles/default
-```
-
-Notes:
-- Use a visible browser when logging in manually (omit `--headless`).
-- Keep profiles private — they contain authenticated session data.
-- If you want to reset, delete the profile folder: `rm -r profiles/default`.
+- Use direct video URLs or search-based crawling for the most reliable results.
+- The crawler still supports visible mode and local Chrome/Edge selection for better compatibility.
+- Do not expect authenticated sessions to persist across runs.
 
 
 ## Architecture Overview
@@ -103,7 +84,7 @@ sequenceDiagram
 ```text
 app.py
 config/           settings and constants
-browser/          Playwright lifecycle, persistent sessions, stealth, captcha
+browser/          Playwright lifecycle, browser lifecycle, stealth, captcha
 crawler/          TikTok crawler, scrolling, DOM extraction, API interception, parsing
 models/           Pydantic Comment, VideoTarget, CrawlResult
 storage/          CSV, JSON, XLSX, Parquet, SQLite writers
@@ -111,7 +92,7 @@ analytics/        beginner-friendly text cleaning and sentiment helpers
 notebooks/        classroom walkthrough
 tests/            parser, storage, and helper tests
 output/           generated exports and debug artifacts
-profiles/         persistent browser sessions
+profiles/         legacy session data or manual browser traces
 ```
 
 ## Captcha Workflow
@@ -123,13 +104,13 @@ Please solve TikTok verification manually in the opened browser.
 The crawler will resume automatically after verification disappears.
 ```
 
-Use visible browser mode for classroom runs. The default profile folder is `profiles/default`, so cookies and logins can persist between sessions.
+Use visible browser mode for classroom runs. The crawler is designed for anonymous comment collection and does not depend on persistent authenticated sessions.
 
-If TikTok asks you to log in, use the opened browser window to authenticate manually. The crawler will wait until login completes and then resume crawling.
+If TikTok shows a login dialog, the crawler will attempt to dismiss it and continue. For the most reliable results, use direct video URLs instead of relying on a logged-in homepage session.
 
 ## Anti-Bot Limitations
 
-This tool does not bypass TikTok security. It uses Playwright, persistent sessions, human-in-the-loop verification, and conservative waits. TikTok may still rate-limit, block, hide comments, or change API/DOM structures. When a run returns zero comments, debug HTML and screenshots are saved in `output/debug`.
+This tool does not bypass TikTok security. It uses Playwright, browser stealth techniques, human-in-the-loop verification, and conservative waits. TikTok may still rate-limit, block, hide comments, or change API/DOM structures. When a run returns zero comments, debug HTML and screenshots are saved in `output/debug`.
 
 ## Export Formats
 
@@ -148,6 +129,7 @@ Use this framework for teaching, research, and analytics with care. Collect only
 ## Troubleshooting
 
 - Browser does not open: run `python -m playwright install chromium`.
+- TikTok blocks login on the bundled Chromium: run with `--browser-channel chrome` or `--chrome-path "C:\Program Files\Google\Chrome\Application\chrome.exe"`.
 - Captcha never clears: solve it in the visible browser and increase `--captcha-timeout`.
 - Zero comments: try `--max-scrolls 80`, verify the comments tab is visible, and inspect `output/debug`.
 - Parquet export fails: ensure `pyarrow` is installed.

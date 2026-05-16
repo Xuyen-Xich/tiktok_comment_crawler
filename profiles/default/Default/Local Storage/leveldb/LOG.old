@@ -1,3 +1,12 @@
-2026/05/16-11:16:08.571 ca0 Reusing MANIFEST D:\XX\Downloads\Tiktok_Crawling\profiles\default\Default\Local Storage\leveldb/MANIFEST-000001
-2026/05/16-11:16:08.591 ca0 Recovering log #26
-2026/05/16-11:16:08.593 ca0 Reusing old log D:\XX\Downloads\Tiktok_Crawling\profiles\default\Default\Local Storage\leveldb/000026.log 
+2026/05/16-16:21:51.552 419c Reusing MANIFEST D:\XX\Downloads\Tiktok_Crawling\profiles\default\Default\Local Storage\leveldb/MANIFEST-000001
+2026/05/16-16:21:51.560 419c Recovering log #43
+2026/05/16-16:21:51.562 419c Level-0 table #47: started
+2026/05/16-16:21:51.573 419c Level-0 table #47: 234239 bytes OK
+2026/05/16-16:21:51.574 419c Recovering log #46
+2026/05/16-16:21:51.577 419c Reusing old log D:\XX\Downloads\Tiktok_Crawling\profiles\default\Default\Local Storage\leveldb/000046.log 
+2026/05/16-16:21:51.580 419c Delete type=0 #43
+2026/05/16-16:22:51.598 4f88 Level-0 table #49: started
+2026/05/16-16:22:51.615 4f88 Level-0 table #49: 49339 bytes OK
+2026/05/16-16:22:51.622 4f88 Delete type=0 #46
+2026/05/16-16:23:46.566 419c Level-0 table #51: started
+2026/05/16-16:23:46.584 419c Level-0 table #51: 45274 bytes OK
