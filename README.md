@@ -18,10 +18,22 @@ copy .env.example .env
 Run one video crawl:
 
 ```powershell
-python app.py crawl --url "https://www.tiktok.com/@ai.agent.vn/video/7598434143021698322?q=social%20media%20marketing&t=1778866382108" --max-comments 200
+python app.py crawl --url "https://www.tiktok.com/@rioolite6969/video/7613919533417418002" --max-comments 1000
+python app.py crawl --url "https://www.tiktok.com/@ngandangam/video/7637825577893924117" --max-comments 1000
+
 ```
 
-Search and crawl top videos:
+
+
+
+python app.py crawl --url "https://www.tiktok.com/@qblack.qq/video/7631236197720804629" --max-comments 2000
+```
+
+Run batch crawl from a URL list:
+
+```powershell
+python app.py batch-crawl --urls-file data/urls.txt --max-comments 500 --output-dir output
+```
 
 ```powershell
 python app.py search --keyword "skincare" --top-n 10 --max-comments-per-video 500

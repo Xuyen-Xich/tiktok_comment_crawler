@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import asyncio
 import re
 from pathlib import Path
 from urllib.parse import quote_plus
@@ -59,6 +60,47 @@ class TikTokCrawler:
             pause_seconds=settings.scroll_pause_seconds,
         )
         self.interceptor.attach(page)
+        self._login_closer_task: asyncio.Task | None = None
+        self._login_closer_stop: asyncio.Event = asyncio.Event()
+
+    async def _login_closer_loop(self) -> None:
+        """Background loop that aggressively closes login modal periodically.
+
+        Runs until `self._login_closer_stop` is set. Uses short sleeps so it
+        does not interfere with normal crawling operations.
+        """
+        try:
+            while not self._login_closer_stop.is_set():
+                try:
+                    # aggressive_close is fast (small timeouts) so await is fine
+                    await self.captcha_handler.aggressive_close_login_container(self.page)
+                except Exception:
+                    # Never let this background task raise
+                    pass
+                # Run fairly frequently but not too tight
+                await asyncio.sleep(0.8)
+        except asyncio.CancelledError:
+            return
+
+    def _start_login_closer(self) -> None:
+        """Start background login-closer if not already running."""
+        if self._login_closer_task and not self._login_closer_task.done():
+            return
+        self._login_closer_stop.clear()
+        self._login_closer_task = asyncio.create_task(self._login_closer_loop())
+
+    async def _stop_login_closer(self) -> None:
+        """Stop the background login-closer task and wait for it to finish."""
+        try:
+            self._login_closer_stop.set()
+            if self._login_closer_task:
+                self._login_closer_task.cancel()
+                try:
+                    await self._login_closer_task
+                except Exception:
+                    pass
+        finally:
+            self._login_closer_task = None
 
     @async_retry(max_attempts=3, base_delay=1.0)
     async def open_url(self, url: str) -> None:
@@ -87,6 +129,11 @@ class TikTokCrawler:
         self.interceptor.configure_context(video_url=target.url, keyword=keyword, search_rank=search_rank)
         await self.open_url(target.url)
         await self.ensure_comments_visible()
+        # Start background task to aggressively close any login modal during long crawls
+        try:
+            self._start_login_closer()
+        except Exception:
+            pass
 
         records_by_id: dict[tuple[str, str], Comment] = {}
         stale_rounds = 0
@@ -127,6 +174,12 @@ class TikTokCrawler:
                 self.logger.info("crawl_stopped_stagnant", extra={"unique_comments": current_count})
                 break
 
+            # Try a quick aggressive close right before scrolling to avoid modal interruptions
+            try:
+                await self.captcha_handler.aggressive_close_login_container(self.page)
+            except Exception:
+                pass
+
             scroll_state = await self.scroll_engine.scroll_once(self.page)
             await self.captcha_handler.wait_if_needed(self.page)
             if scroll_state.get("at_bottom") and stale_rounds >= max(2, self.settings.stagnant_rounds // 2):
@@ -136,6 +189,11 @@ class TikTokCrawler:
         comments = dedupe_comments(list(records_by_id.values()))
         if not comments:
             await self.write_debug_artifacts(target.url)
+        # Stop the background login-closer if it was started
+        try:
+            await self._stop_login_closer()
+        except Exception:
+            pass
         return comments[:max_comments] if max_comments else comments
 
     async def search_video_urls(self, keyword: str, *, top_n: int = 10, search_scrolls: int = 8) -> list[str]:
@@ -160,6 +218,11 @@ class TikTokCrawler:
                 break
             previous = len(collected)
             
+            try:
+                await self.captcha_handler.aggressive_close_login_container(self.page)
+            except Exception:
+                pass
+
             await self.scroll_engine.scroll_once(self.page)
             
             stable_rounds = stable_rounds + 1 if len(collected) == previous else 0
@@ -218,6 +281,12 @@ class TikTokCrawler:
                 continue
             try:
                 await element.scroll_into_view_if_needed(timeout=1_000)
+                # Close any login container quickly before clicking
+                try:
+                    await self.captcha_handler.aggressive_close_login_container(self.page)
+                except Exception:
+                    pass
+
                 await element.click(timeout=2_000)
                 await sleep_with_jitter(1.0)
                 if await self.has_comments_dom(timeout_ms=4_000):
