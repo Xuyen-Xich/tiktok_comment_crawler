@@ -2,6 +2,8 @@
 
 Async Playwright crawler for collecting TikTok comments for marketing analytics.
 
+This project focuses on developing an automated data collection tool designed to extract customer comments data from specific posts (or a curated list of posts) on Tiktok. The primary objective is to gather a rich, real-world dataset to support practical assignments and research in the Social Media Analytics course.
+
 ## Quick Start
 
 ```powershell
