@@ -8,7 +8,7 @@ This project focuses on developing an automated data collection tool designed to
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+.\.venv\Scripts\activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 python -m playwright install chromium
